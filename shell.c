@@ -1632,6 +1632,7 @@ surface_move(struct shell_surface *shsurf, struct weston_pointer *pointer,
 {
 	//LLP ADD 2023-11-30
 	/*从shell_surface 获得desktop_shell，从而获得合成器,进而获取表面，进而创建表面*/
+/*  2023 1228
 	struct desktop_shell *shell = shsurf->shell;
 	struct weston_compositor *compositor = shell->compositor;
 	struct weston_surface *surface = weston_surface_create(compositor);
@@ -1640,7 +1641,19 @@ surface_move(struct shell_surface *shsurf, struct weston_pointer *pointer,
     struct weston_view *view1 = weston_view_create(surface);
     weston_view_set_position(view1, 0,0);
 	weston_layer_entry_insert(&shell->background_layer.view_list,&view1->layer_link);
-
+	weston_view_destroy(view1);
+*/ 
+    //LLP ADD 2023-12-28  和上面的区别，使用自己定义位置的表面，而不是已有表面，
+    struct weston_layer *my_layer = zalloc(sizeof(*my_layer));
+	weston_layer_init(my_layer,shsurf->shell->compositor);
+    weston_layer_set_position(my_layer,0x40000000);
+    struct weston_surface *surface = weston_surface_create(shsurf->shell->compositor);
+	weston_surface_set_color(surface,1.0,1.0,1.0,1.0);
+	weston_surface_set_size(surface,500,700);
+    struct weston_view *view1 = weston_view_create(surface);
+    weston_view_set_position(view1, 0,0);
+	weston_layer_entry_insert(&my_layer->view_list,&view1->layer_link);
+    //weston_view_destroy(view1);
 
 
 	struct weston_move_grab *move;
@@ -1668,8 +1681,9 @@ surface_move(struct shell_surface *shsurf, struct weston_pointer *pointer,
 	shell_grab_start(&move->base, &move_grab_interface, shsurf,
 					 pointer, WESTON_DESKTOP_SHELL_CURSOR_MOVE);
 	
-
+  
 	return 0;
+
 }
 
 struct weston_resize_grab
