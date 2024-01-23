@@ -10,4 +10,9 @@
     weston_view_set_position(view1, 0,0);
 	weston_layer_entry_insert(&my_layer->view_list,&view1->layer_link);
 ```
-2.通过xdg_shell解决客户端指定位置的问题
+2.通过xdg_shell解决客户端指定位置的问题.
+
+2-1.shell.h
+![Alt text](./LLP_IMAGE/2-1-1.png)
+
+2-2.shell.c
