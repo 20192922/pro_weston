@@ -58,6 +58,7 @@ struct focus_state
 	struct wl_listener surface_destroy_listener;
 };
 /*LLP ADD:save APP message ,most use in function:desktop_surface_removed,weston_view_set_initial_position*/
+/*2024-1-18目前结论：weston似乎不能支持双指逻辑，一个手指按下，触发shell_touch_grab_start，不释放，另一个手指按下，第一个手指会触发shell_touch_grab_end，再去触发第二个手指的shell_touch_grab_start*/
 struct AppLocationData
 {
 	int Width;
@@ -72,6 +73,21 @@ struct AppInfoList
 	struct AppLocationData AppMsg[3];
 };
 struct AppInfoList appInfoList = {0};
+/*LLP ADD GLOBAL MESSAGE TO SURFACE -2024-1-3 SURLLP*/
+struct weston_surface *surface;
+struct weston_view *view1;
+struct weston_layer *my_layer;
+/*LLP ADD GLOBAL MESSAGE TO Two-finger gestures -2024- 1-18 LLPTWOFINGER -no accomplish*/
+struct touch_point
+{
+	int32_t touch_id;
+	wl_fixed_t x;
+	wl_fixed_t y;
+	bool active;
+};
+static struct touch_point touch_points[10] = {0};
+/*LLP ADD GLOBAL MESSAGE TO set position -2024 -1- 23*/
+extern struct Application_Gemotry ApplicationGemotry;
 /*
  * Surface stacking and ordering.
  *
@@ -379,7 +395,8 @@ void get_output_work_area(struct desktop_shell *shell,
 
 	area->x = output->x;
 	area->y = output->y;
-
+	// LLP ADD
+	// printf("LLP:get_output_work_area>output->x=%d output->y=%d\n",output->x,output->y);结果都是0，0
 	get_output_panel_size(shell, output, &panel_width, &panel_height);
 	switch (shell->panel_position)
 	{
@@ -399,6 +416,7 @@ void get_output_work_area(struct desktop_shell *shell,
 		area->height = output->height;
 		break;
 	}
+	printf("LLP:get_output_work_area>output->x=%d output->y=%d\n", output->x, output->y);
 }
 
 static void
@@ -414,8 +432,13 @@ shell_grab_end(struct shell_grab *grab)
 			grab->shsurf->resize_edges = 0;
 		}
 	}
-
+	printf("LLP:shell_grab_end\n");
 	weston_pointer_end_grab(grab->grab.pointer);
+	/*SURLLP 这些视图重绘函数目前都会导致视图残留  */
+	// weston_view_geometry_dirty(view1);
+	// weston_surface_destroy(surface);
+	// weston_view_destroy(view1);//view1 of SURLLP
+	// weston_compositor_schedule_repaint(grab->shsurf->shell->compositor);
 }
 
 static void
@@ -425,7 +448,7 @@ shell_touch_grab_start(struct shell_touch_grab *grab,
 					   struct weston_touch *touch)
 {
 	struct desktop_shell *shell = shsurf->shell;
-
+	printf("LLP:shell_touch_grab_start\n");
 	weston_seat_break_desktop_grabs(touch->seat);
 
 	grab->grab.interface = interface;
@@ -453,6 +476,7 @@ shell_touch_grab_end(struct shell_touch_grab *grab)
 	}
 
 	weston_touch_end_grab(grab->touch);
+	printf("LLP:shell_touch_grab_end\n");
 }
 
 static void
@@ -603,7 +627,7 @@ create_focus_surface(struct weston_compositor *ec,
 		free(fsurf);
 		return NULL;
 	}
-
+	printf("LLP:create_focus_surface>the width is %d\n\n", fsurf->surface->width);
 	surface->committed = focus_surface_committed;
 	surface->output = output;
 	surface->is_mapped = true;
@@ -622,7 +646,7 @@ create_focus_surface(struct weston_compositor *ec,
 
 	weston_surface_set_size(surface, output->width, output->height);
 	weston_view_set_position(fsurf->view, output->x, output->y);
-	weston_surface_set_color(surface, 0.0, 0.0, 0.0, 1.0);
+	weston_surface_set_color(surface, 1.0, 1.0, 1.0, 1.0); // LLP change :0.0 0.0 0.0 1.0
 	pixman_region32_fini(&surface->opaque);
 	pixman_region32_init_rect(&surface->opaque, output->x, output->y,
 							  output->width, output->height);
@@ -638,7 +662,7 @@ static void
 focus_surface_destroy(struct focus_surface *fsurf)
 {
 	weston_surface_destroy(fsurf->surface);
-	printf("the width is %d\n\n", fsurf->surface->width);
+	printf("LLP:focus_surface_destroy>the width is %d\n\n", fsurf->surface->width);
 	free(fsurf);
 }
 
@@ -1414,6 +1438,20 @@ touch_move_grab_down(struct weston_touch_grab *grab,
 					 const struct timespec *time,
 					 int touch_id, wl_fixed_t x, wl_fixed_t y)
 {
+	/*LLPTWOFINGER*/
+
+	for (int i = 0; i < 10; i++)
+	{
+		if (!touch_points[i].active)
+		{
+			touch_points[i].touch_id = touch_id;
+			touch_points[i].x = x;
+			touch_points[i].y = y;
+			touch_points[i].active = true;
+			printf("LLP:touch_move_grab_down\n");
+			break;
+		}
+	}
 }
 
 static void
@@ -1432,6 +1470,15 @@ touch_move_grab_up(struct weston_touch_grab *grab, const struct timespec *time,
 		shell_touch_grab_end(&move->base);
 		free(move);
 	}
+	/*LLPTWOFINGER*/
+	for (int i = 0; i < 10; i++)
+	{
+		if (touch_points[i].touch_id == touch_id)
+		{
+			touch_points[i].active = false;
+			break;
+		}
+	}
 }
 
 static void
@@ -1439,18 +1486,41 @@ touch_move_grab_motion(struct weston_touch_grab *grab,
 					   const struct timespec *time, int touch_id,
 					   wl_fixed_t x, wl_fixed_t y)
 {
+	/*LLPTWOFINGER --change more*/
+	int active_touches = 0;
 	struct weston_touch_move_grab *move = (struct weston_touch_move_grab *)grab;
 	struct shell_surface *shsurf = move->base.shsurf;
 	struct weston_surface *es;
 	int dx = wl_fixed_to_int(grab->touch->grab_x + move->dx);
 	int dy = wl_fixed_to_int(grab->touch->grab_y + move->dy);
 
-	if (!shsurf || !move->active)
-		return;
+	for (int i = 0; i < 10; i++)
+	{
+		if (touch_points[i].touch_id == touch_id && touch_points[i].active)
+		{
+			touch_points[i].x = x;
+			touch_points[i].y = y;
+		}
+		if (touch_points[i].active)
+		{
+			active_touches += 1;
+		}
+	}
 
-	es = weston_desktop_surface_get_surface(shsurf->desktop_surface);
+	if (active_touches != 2)
+	{
 
-	weston_view_set_position(shsurf->view, dx, dy);
+		// weston_log("LLP:'touch_move_grab_motion:the x = %d y = %d'\n", dx, dy);
+		if (!shsurf || !move->active)
+			return;
+		es = weston_desktop_surface_get_surface(shsurf->desktop_surface);
+		weston_view_set_position(shsurf->view, dx, dy);
+	}
+
+	else
+	{
+		weston_log("LLP:touch_move_grab_motion: two finger");
+	}
 
 	weston_compositor_schedule_repaint(es->compositor);
 }
@@ -1626,35 +1696,36 @@ static const struct weston_pointer_grab_interface move_grab_interface = {
 	move_grab_cancel,
 };
 
+/*该函数在鼠标拖动时运行，触摸移动不触发-LLP*/
 static int
 surface_move(struct shell_surface *shsurf, struct weston_pointer *pointer,
 			 bool client_initiated)
 {
-	//LLP ADD 2023-11-30
-	/*从shell_surface 获得desktop_shell，从而获得合成器,进而获取表面，进而创建表面*/
-/*  2023 1228
-	struct desktop_shell *shell = shsurf->shell;
-	struct weston_compositor *compositor = shell->compositor;
-	struct weston_surface *surface = weston_surface_create(compositor);
-	weston_surface_set_color(surface,1.0,1.0,1.0,1.0);
-	weston_surface_set_size(surface,500,700);
-    struct weston_view *view1 = weston_view_create(surface);
-    weston_view_set_position(view1, 0,0);
-	weston_layer_entry_insert(&shell->background_layer.view_list,&view1->layer_link);
-	weston_view_destroy(view1);
-*/ 
-    //LLP ADD 2023-12-28  和上面的区别，使用自己定义位置的表面，而不是已有表面，
-    struct weston_layer *my_layer = zalloc(sizeof(*my_layer));
-	weston_layer_init(my_layer,shsurf->shell->compositor);
-    weston_layer_set_position(my_layer,0x40000000);
-    struct weston_surface *surface = weston_surface_create(shsurf->shell->compositor);
-	weston_surface_set_color(surface,1.0,1.0,1.0,1.0);
-	weston_surface_set_size(surface,500,700);
-    struct weston_view *view1 = weston_view_create(surface);
-    weston_view_set_position(view1, 0,0);
-	weston_layer_entry_insert(&my_layer->view_list,&view1->layer_link);
-    //weston_view_destroy(view1);
 
+	// LLP ADD 2023-11-30
+	/*从shell_surface 获得desktop_shell，从而获得合成器,进而获取表面，进而创建表面*/
+	/*  2023 1228
+		struct desktop_shell *shell = shsurf->shell;
+		struct weston_compositor *compositor = shell->compositor;
+		struct weston_surface *surface = weston_surface_create(compositor);
+		weston_surface_set_color(surface,1.0,1.0,1.0,1.0);
+		weston_surface_set_size(surface,500,700);
+		struct weston_view *view1 = weston_view_create(surface);
+		weston_view_set_position(view1, 0,0);
+		weston_layer_entry_insert(&shell->background_layer.view_list,&view1->layer_link);
+		weston_view_destroy(view1);
+	*/
+	// LLP ADD 2023-12-28  和上面的区别，使用自己定义位置的表面，而不是已有表面，
+	my_layer = zalloc(sizeof(*my_layer));
+	weston_layer_init(my_layer, shsurf->shell->compositor);
+	weston_layer_set_position(my_layer, 0x40000000);
+	surface = weston_surface_create(shsurf->shell->compositor);
+	weston_surface_set_color(surface, 1.0, 0.0, 0.0, 0.0);
+	weston_surface_set_size(surface, 500, 700);
+	view1 = weston_view_create(surface); // view1 of SURLLP
+	weston_view_set_position(view1, 0, 0);
+	weston_layer_entry_insert(&my_layer->view_list, &view1->layer_link);
+	// weston_view_destroy(view1);
 
 	struct weston_move_grab *move;
 
@@ -1675,15 +1746,13 @@ surface_move(struct shell_surface *shsurf, struct weston_pointer *pointer,
 	move->dy = wl_fixed_from_double(shsurf->view->geometry.y) -
 			   pointer->grab_y;
 	move->client_initiated = client_initiated;
-    //LLP ADD 2023 11 30
-	printf("the x = %f the y = %f \n",shsurf->view->geometry.x,shsurf->view->geometry.y);
+	// LLP ADD 2023 11 30
+	printf("the x = %f the y = %f \n", shsurf->view->geometry.x, shsurf->view->geometry.y);
 
 	shell_grab_start(&move->base, &move_grab_interface, shsurf,
 					 pointer, WESTON_DESKTOP_SHELL_CURSOR_MOVE);
-	
-  
-	return 0;
 
+	return 0;
 }
 
 struct weston_resize_grab
@@ -2677,7 +2746,9 @@ map(struct desktop_shell *shell, struct shell_surface *shsurf,
 		weston_desktop_surface_get_surface(shsurf->desktop_surface);
 	struct weston_compositor *compositor = shell->compositor;
 	struct weston_seat *seat;
-
+	weston_log("LLP:map>the sx = %d sy = %d\n", sx, sy); // 都是0
+	weston_log("LLP:map>the width = %d height = %d\n", surface->width, surface->height);
+	weston_log("LLP:map>the width = %d height = %d\n", shsurf->saved_x, shsurf->saved_y);
 	/* initial positioning, see also configure() */
 	if (shsurf->state.fullscreen)
 	{
@@ -2731,7 +2802,7 @@ map(struct desktop_shell *shell, struct shell_surface *shsurf,
 		}
 	}
 }
-
+/*绘图关键函数，无需更改*/
 static void
 desktop_surface_committed(struct weston_desktop_surface *desktop_surface,
 						  int32_t sx, int32_t sy, void *data)
@@ -2744,7 +2815,8 @@ desktop_surface_committed(struct weston_desktop_surface *desktop_surface,
 	struct desktop_shell *shell = data;
 	bool was_fullscreen;
 	bool was_maximized;
-
+	// weston_log("LLP:desktop_surface_committed>the sx = %d sy = %d\n",sx,sy);
+	// weston_log("LLP:desktop_surface_committed>the x = %d y = %d\n",view->geometry.x,view->geometry.y);
 	if (surface->width == 0)
 		return;
 
@@ -4587,12 +4659,22 @@ weston_view_set_initial_position(struct weston_view *view,
 	struct weston_desktop_surface *desktop_surface = weston_surface_get_desktop_surface(view->surface);
 	if (appInfoList.AppMsg[0].Exist == 0)
 	{
-		weston_view_set_position(view, 0, 0);
-		weston_desktop_surface_set_size(desktop_surface, 506, view->surface->height);
-		appInfoList.AppMsg[0].Hight = view->surface->height;
-		appInfoList.AppMsg[0].Width = view->surface->width;
-		appInfoList.AppMsg[1].Geometry_X = 506;
-		appInfoList.AppMsg[0].Exist = 1;
+		/*LLP:2024-1-13:解决客户端不能指定位置的问题*/
+		if (ApplicationGemotry.flag == 1)
+		{
+			weston_view_set_position(view, ApplicationGemotry.x, ApplicationGemotry.y);
+			weston_desktop_surface_set_size(desktop_surface, ApplicationGemotry.width, ApplicationGemotry.height);
+			ApplicationGemotry.flag = 0;
+		}
+		else
+		{
+			weston_view_set_position(view, 0, 0);
+			weston_desktop_surface_set_size(desktop_surface, view->surface->width, view->surface->height);
+			appInfoList.AppMsg[0].Hight = view->surface->height;
+			appInfoList.AppMsg[0].Width = view->surface->width;
+			appInfoList.AppMsg[1].Geometry_X = 506;
+			appInfoList.AppMsg[0].Exist = 1;
+		}
 	}
 	else if (appInfoList.AppMsg[1].Exist == 0)
 	{

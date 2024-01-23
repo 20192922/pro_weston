@@ -32,7 +32,8 @@
 
 #include "weston-desktop-shell-server-protocol.h"
 
-enum animation_type {
+enum animation_type
+{
 	ANIMATION_NONE,
 
 	ANIMATION_ZOOM,
@@ -40,32 +41,37 @@ enum animation_type {
 	ANIMATION_DIM_LAYER,
 };
 
-enum fade_type {
+enum fade_type
+{
 	FADE_IN,
 	FADE_OUT
 };
 
-enum exposay_target_state {
+enum exposay_target_state
+{
 	EXPOSAY_TARGET_OVERVIEW, /* show all windows */
-	EXPOSAY_TARGET_CANCEL, /* return to normal, same focus */
-	EXPOSAY_TARGET_SWITCH, /* return to normal, switch focus */
+	EXPOSAY_TARGET_CANCEL,	 /* return to normal, same focus */
+	EXPOSAY_TARGET_SWITCH,	 /* return to normal, switch focus */
 };
 
-enum exposay_layout_state {
-	EXPOSAY_LAYOUT_INACTIVE = 0, /* normal desktop */
+enum exposay_layout_state
+{
+	EXPOSAY_LAYOUT_INACTIVE = 0,		/* normal desktop */
 	EXPOSAY_LAYOUT_ANIMATE_TO_INACTIVE, /* in transition to normal */
-	EXPOSAY_LAYOUT_OVERVIEW, /* show all windows */
+	EXPOSAY_LAYOUT_OVERVIEW,			/* show all windows */
 	EXPOSAY_LAYOUT_ANIMATE_TO_OVERVIEW, /* in transition to all windows */
 };
 
-struct exposay_output {
+struct exposay_output
+{
 	int num_surfaces;
 	int grid_size;
 	int surface_size;
 	int padding_inner;
 };
 
-struct exposay {
+struct exposay
+{
 	/* XXX: Make these exposay_surfaces. */
 	struct weston_view *focus_prev;
 	struct weston_view *focus_current;
@@ -90,13 +96,15 @@ struct exposay {
 	bool mod_invalid;
 };
 
-struct focus_surface {
+struct focus_surface
+{
 	struct weston_surface *surface;
 	struct weston_view *view;
 	struct weston_transform workspace_transform;
 };
 
-struct workspace {
+struct workspace
+{
 	struct weston_layer layer;
 
 	struct wl_list focus_list;
@@ -107,12 +115,13 @@ struct workspace {
 	struct weston_view_animation *focus_animation;
 };
 
-struct shell_output {
-	struct desktop_shell  *shell;
-	struct weston_output  *output;
+struct shell_output
+{
+	struct desktop_shell *shell;
+	struct weston_output *output;
 	struct exposay_output eoutput;
-	struct wl_listener    destroy_listener;
-	struct wl_list        link;
+	struct wl_listener destroy_listener;
+	struct wl_list link;
 
 	struct weston_surface *panel_surface;
 	struct wl_listener panel_surface_listener;
@@ -120,7 +129,8 @@ struct shell_output {
 	struct weston_surface *background_surface;
 	struct wl_listener background_surface_listener;
 
-	struct {
+	struct
+	{
 		struct weston_view *view;
 		struct weston_view_animation *animation;
 		enum fade_type type;
@@ -129,7 +139,8 @@ struct shell_output {
 };
 
 struct weston_desktop;
-struct desktop_shell {
+struct desktop_shell
+{
 	struct weston_compositor *compositor;
 	struct weston_desktop *desktop;
 	const struct weston_xwayland_surface_api *xwayland_surface_api;
@@ -152,7 +163,8 @@ struct desktop_shell {
 	struct wl_listener pointer_focus_listener;
 	struct weston_surface *grab_surface;
 
-	struct {
+	struct
+	{
 		struct wl_client *client;
 		struct wl_resource *desktop_shell;
 		struct wl_listener client_destroy_listener;
@@ -167,7 +179,8 @@ struct desktop_shell {
 
 	struct text_backend *text_backend;
 
-	struct {
+	struct
+	{
 		struct weston_surface *surface;
 		pixman_box32_t cursor_rectangle;
 	} text_input;
@@ -175,7 +188,8 @@ struct desktop_shell {
 	struct weston_surface *lock_surface;
 	struct wl_listener lock_surface_listener;
 
-	struct {
+	struct
+	{
 		struct wl_array array;
 		unsigned int current;
 		unsigned int num;
@@ -191,7 +205,8 @@ struct desktop_shell {
 		struct workspace *anim_to;
 	} workspaces;
 
-	struct {
+	struct
+	{
 		struct wl_resource *binding;
 		struct wl_list surfaces;
 	} input_panel;
@@ -219,6 +234,16 @@ struct desktop_shell {
 
 	struct timespec startup_time;
 };
+/*LLP ADD*/
+struct Application_Gemotry
+{
+	int x;
+	int y;
+	int width;
+	int height;
+	bool flag;
+};
+//extern struct Application_Gemotry ApplicationGemotry;
 
 struct weston_output *
 get_default_output(struct weston_compositor *compositor);
@@ -232,32 +257,25 @@ get_shell_surface(struct weston_surface *surface);
 struct workspace *
 get_current_workspace(struct desktop_shell *shell);
 
-void
-get_output_work_area(struct desktop_shell *shell,
-		     struct weston_output *output,
-		     pixman_rectangle32_t *area);
+void get_output_work_area(struct desktop_shell *shell,
+						  struct weston_output *output,
+						  pixman_rectangle32_t *area);
 
-void
-lower_fullscreen_layer(struct desktop_shell *shell,
-		       struct weston_output *lowering_output);
+void lower_fullscreen_layer(struct desktop_shell *shell,
+							struct weston_output *lowering_output);
 
-void
-activate(struct desktop_shell *shell, struct weston_view *view,
-	 struct weston_seat *seat, uint32_t flags);
+void activate(struct desktop_shell *shell, struct weston_view *view,
+			  struct weston_seat *seat, uint32_t flags);
 
-void
-exposay_binding(struct weston_keyboard *keyboard,
-		enum weston_keyboard_modifier modifier,
-		void *data);
-int
-input_panel_setup(struct desktop_shell *shell);
-void
-input_panel_destroy(struct desktop_shell *shell);
+void exposay_binding(struct weston_keyboard *keyboard,
+					 enum weston_keyboard_modifier modifier,
+					 void *data);
+int input_panel_setup(struct desktop_shell *shell);
+void input_panel_destroy(struct desktop_shell *shell);
 
 typedef void (*shell_for_each_layer_func_t)(struct desktop_shell *,
-					    struct weston_layer *, void *);
+											struct weston_layer *, void *);
 
-void
-shell_for_each_layer(struct desktop_shell *shell,
-		     shell_for_each_layer_func_t func,
-		     void *data);
+void shell_for_each_layer(struct desktop_shell *shell,
+						  shell_for_each_layer_func_t func,
+						  void *data);
