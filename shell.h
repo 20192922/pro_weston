@@ -242,6 +242,7 @@ struct Application_Gemotry
 	int width;
 	int height;
 	bool flag;
+	bool positionFlag;
 };
 //extern struct Application_Gemotry ApplicationGemotry;
 

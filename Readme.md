@@ -52,3 +52,30 @@ weston_desktop_xdg_surface_protocol_set_window_geometry(struct wl_client *wl_cli
 	//printf("LLP:weston_desktop_xdg_surface_protocol_set_window_geometry>\n x = %d,y = %d,width = %d,height = %d", x, y, width, height);
 }
 ```
+2-4 高级指定
+shell.c :
+//注意，在desktop_surface_committed里面加入有关响应，-maybe it's not a good way,客户端使用wl_surface_commit可触发这个回调，注意必须要提交正确的surface才能正常设置
+/*绘图关键函数，注意更改部分是为了实时设置窗口位置*/
+```c
+static void
+desktop_surface_committed(struct weston_desktop_surface *desktop_surface,
+						  int32_t sx, int32_t sy, void *data)
+{
+    ...
+	/*LLP ADD to change position after initial position*/
+	if (ApplicationGemotry.flag == 1)
+	{
+		weston_log("LLP:desktop_surface_committed>the position change new_x = %d , new_y = %d\n", ApplicationGemotry.x, ApplicationGemotry.y);
+		weston_view_set_position(shsurf->view, ApplicationGemotry.x, ApplicationGemotry.y);
+		/*change width and height*/
+		if (ApplicationGemotry.width > 20 && ApplicationGemotry.height > 20)
+			weston_desktop_surface_set_size(desktop_surface, ApplicationGemotry.width, ApplicationGemotry.height);
+		/*close flag*/
+		ApplicationGemotry.flag = 0;
+	}
+
+	if (surface->width == 0)
+		return;
+    ...
+}
+```

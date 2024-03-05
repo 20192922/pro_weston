@@ -43,7 +43,6 @@
 #include "shared/helpers.h"
 #include "shared/timespec-util.h"
 #include <libweston-desktop/libweston-desktop.h>
-
 #define DEFAULT_NUM_WORKSPACES 1
 #define DEFAULT_WORKSPACE_CHANGE_ANIMATION_LENGTH 200
 
@@ -332,6 +331,9 @@ shell_grab_start(struct shell_grab *grab,
 								 wl_fixed_from_int(0),
 								 wl_fixed_from_int(0));
 	}
+	//LLP ADD
+	weston_desktop_surface_set_size(shsurf->desktop_surface,shsurf->last_width,shsurf->last_height);
+	//weston_surface_set_size(shell->grab_surface,100,100);
 }
 
 static void
@@ -1716,15 +1718,15 @@ surface_move(struct shell_surface *shsurf, struct weston_pointer *pointer,
 		weston_view_destroy(view1);
 	*/
 	// LLP ADD 2023-12-28  和上面的区别，使用自己定义位置的表面，而不是已有表面，
-	my_layer = zalloc(sizeof(*my_layer));
-	weston_layer_init(my_layer, shsurf->shell->compositor);
-	weston_layer_set_position(my_layer, 0x40000000);
-	surface = weston_surface_create(shsurf->shell->compositor);
-	weston_surface_set_color(surface, 1.0, 0.0, 0.0, 0.0);
-	weston_surface_set_size(surface, 500, 700);
-	view1 = weston_view_create(surface); // view1 of SURLLP
-	weston_view_set_position(view1, 0, 0);
-	weston_layer_entry_insert(&my_layer->view_list, &view1->layer_link);
+	// my_layer = zalloc(sizeof(*my_layer));
+	// weston_layer_init(my_layer, shsurf->shell->compositor);
+	// weston_layer_set_position(my_layer, 0x40000000);
+	// surface = weston_surface_create(shsurf->shell->compositor);
+	// weston_surface_set_color(surface, 1.0, 0.0, 0.0, 0.0);
+	// weston_surface_set_size(surface, 500, 700);
+	// view1 = weston_view_create(surface); // view1 of SURLLP
+	// weston_view_set_position(view1, 0, 0);
+	// weston_layer_entry_insert(&my_layer->view_list, &view1->layer_link);
 	// weston_view_destroy(view1);
 
 	struct weston_move_grab *move;
@@ -1747,11 +1749,12 @@ surface_move(struct shell_surface *shsurf, struct weston_pointer *pointer,
 			   pointer->grab_y;
 	move->client_initiated = client_initiated;
 	// LLP ADD 2023 11 30
-	printf("the x = %f the y = %f \n", shsurf->view->geometry.x, shsurf->view->geometry.y);
+	printf("LLP:surface_move:the x = %f the y = %f \n", shsurf->view->geometry.x, shsurf->view->geometry.y);
 
 	shell_grab_start(&move->base, &move_grab_interface, shsurf,
 					 pointer, WESTON_DESKTOP_SHELL_CURSOR_MOVE);
-
+	
+    
 	return 0;
 }
 
@@ -1821,6 +1824,7 @@ resize_grab_motion(struct weston_pointer_grab *grab,
 	else if (max_size.width > 0 && width > max_size.width)
 		width = max_size.width;
 	weston_desktop_surface_set_size(shsurf->desktop_surface, width, height);
+	printf("LLP:resize_grab_motion width = %d,height = %d\n",width,height);//这个函数实现的图行变化连续
 }
 
 static void
@@ -1949,6 +1953,7 @@ surface_resize(struct shell_surface *shsurf,
 	shell_grab_start(&resize->base, &resize_grab_interface, shsurf,
 					 pointer, edges);
 
+    printf("llp:shell.c surface_resize\n");
 	return 0;
 }
 
@@ -2304,7 +2309,7 @@ create_black_surface(struct weston_compositor *ec,
 {
 	struct weston_surface *surface = NULL;
 	struct weston_view *view;
-
+    
 	surface = weston_surface_create(ec);
 	if (surface == NULL)
 	{
@@ -2330,7 +2335,7 @@ create_black_surface(struct weston_compositor *ec,
 
 	weston_surface_set_size(surface, w, h);
 	weston_view_set_position(view, x, y);
-
+    printf("llp:shell.c create_black_surface\n");
 	return view;
 }
 
@@ -2357,7 +2362,7 @@ shell_ensure_fullscreen_black_view(struct shell_surface *shsurf)
 							  &shsurf->fullscreen.black_view->layer_link);
 	weston_view_geometry_dirty(shsurf->fullscreen.black_view);
 	weston_surface_damage(surface);
-
+    printf("llp:shell.c shell_ensure_fullscreen_black_view\n");
 	shsurf->fullscreen.black_view->is_mapped = true;
 	shsurf->state.lowered = false;
 }
@@ -2404,7 +2409,7 @@ get_focused_output(struct weston_compositor *compositor)
 {
 	struct weston_seat *seat;
 	struct weston_output *output = NULL;
-
+    printf("llp:get_focused_output\n");//目前没有发现触发
 	wl_list_for_each(seat, &compositor->seat_list, link)
 	{
 		struct weston_touch *touch = weston_seat_get_touch(seat);
@@ -2710,7 +2715,8 @@ set_maximized_position(struct desktop_shell *shell,
 
 	get_output_work_area(shell, shsurf->output, &area);
 	geometry = weston_desktop_surface_get_geometry(shsurf->desktop_surface);
-
+    /*LLP ADD-*/
+    printf("LLP:set_maximized_position>geometry.x = %d,geometry.y = %d\n",geometry.x,geometry.y);
 	weston_view_set_position(shsurf->view,
 							 area.x - geometry.x,
 							 area.y - geometry.y);
@@ -2802,7 +2808,7 @@ map(struct desktop_shell *shell, struct shell_surface *shsurf,
 		}
 	}
 }
-/*绘图关键函数，无需更改*/
+/*绘图关键函数，注意更改部分是为了实时设置窗口位置*/
 static void
 desktop_surface_committed(struct weston_desktop_surface *desktop_surface,
 						  int32_t sx, int32_t sy, void *data)
@@ -2817,6 +2823,18 @@ desktop_surface_committed(struct weston_desktop_surface *desktop_surface,
 	bool was_maximized;
 	// weston_log("LLP:desktop_surface_committed>the sx = %d sy = %d\n",sx,sy);
 	// weston_log("LLP:desktop_surface_committed>the x = %d y = %d\n",view->geometry.x,view->geometry.y);
+	/*LLP ADD to change position after initial position*/
+	if (ApplicationGemotry.flag == 1)
+	{
+		weston_log("LLP:desktop_surface_committed>the position change new_x = %d , new_y = %d\n", ApplicationGemotry.x, ApplicationGemotry.y);
+		weston_view_set_position(shsurf->view, ApplicationGemotry.x, ApplicationGemotry.y);
+		/*change width and height*/
+		if (ApplicationGemotry.width > 20 && ApplicationGemotry.height > 20)
+			weston_desktop_surface_set_size(desktop_surface, ApplicationGemotry.width, ApplicationGemotry.height);
+		/*close flag*/
+		ApplicationGemotry.flag = 0;
+	}
+
 	if (surface->width == 0)
 		return;
 
@@ -3017,6 +3035,7 @@ desktop_surface_resize(struct weston_desktop_surface *desktop_surface,
 
 	if (surface_resize(shsurf, pointer, edges) < 0)
 		wl_resource_post_no_memory(resource);
+	printf("llp:desktop_surface_resize\n");
 }
 
 static void
