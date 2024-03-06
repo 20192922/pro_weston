@@ -32,6 +32,7 @@
 
 #include "weston-desktop-shell-server-protocol.h"
 
+#include "llp_protocol-server-protocol.h"
 enum animation_type
 {
 	ANIMATION_NONE,

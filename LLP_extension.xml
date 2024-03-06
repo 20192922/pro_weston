@@ -1,0 +1,39 @@
+<protocol name="llp_extension">
+<interface name="llp_touch" version="1">
+    <description summary="LLP add to deliver touch information">
+      The llp_touch interface is exposed as a global object enabling clients
+      to deliver touch information from server to client.
+    </description>
+    <enum name="Touch_event">
+      <entry name="one_click" value="0" summary="one"/>
+      <entry name="pinch_in" value="1" summary="pinch_in"/>
+      <entry name="pinch_out" value="2" summary="pinch_out"/>
+      <entry name="swipe_lift" value="3" summary="swipe_lift"/>
+      <entry name="swipe_right" value="4" summary="swipe_right"/>
+      <entry name="swipe_up" value="5" summary="swipe_up"/>
+      <entry name="swipe_down" value="6" summary="swipe_down"/>
+      <entry name="double_click" value="7" summary="double"/>
+    </enum>
+    <request name="get_touch_event">
+      <description summary="get_touch_event">
+    	get_touch_event
+      </description>
+      <arg name="x" type="int"/>
+      <arg name="y" type="int"/>
+      <arg name="w" type="int"/>
+      <arg name="h" type="int"/>
+      <arg name="touch_event" type="int"/> 
+    </request>
+
+    <event name="send_touch_event">
+    <description summary="send_touch_event">
+	    send_touch_event
+      </description>
+      <arg name="x" type="int"/>
+      <arg name="y" type="int"/>
+      <arg name="w" type="int"/>
+      <arg name="h" type="int"/>
+      <arg name="touch_event" type="int"/> 
+    </event>
+  </interface>
+  </protocol>

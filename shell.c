@@ -46,6 +46,19 @@
 #define DEFAULT_NUM_WORKSPACES 1
 #define DEFAULT_WORKSPACE_CHANGE_ANIMATION_LENGTH 200
 
+static void my_function1(struct wl_client *client, struct wl_resource *resource, int32_t x, int32_t y, int32_t w, int32_t h) {
+  // 这里处理您的业务逻辑。例如，保存这些参数或者更改窗口的大小等。
+  printf("Function1 called with x=%d, y=%d, w=%d, h=%d\n", x, y, w, h);
+
+  // 假设我们需要响应客户端
+  llp_interface_send_onfunction1(resource, x, y, w, h);
+
+}
+
+// 这个结构体定义了接口的实现，它包含了接口中函数的实际实现
+static const struct llp_interface_interface my_implementation = {
+    my_function1,
+};
 struct focus_state
 {
 	struct desktop_shell *shell;
@@ -4860,7 +4873,15 @@ bind_desktop_shell(struct wl_client *client,
 	wl_resource_post_error(resource, WL_DISPLAY_ERROR_INVALID_OBJECT,
 						   "permission to bind desktop_shell denied");
 }
+static void bind_my_interface(struct wl_client *client, void *data, uint32_t version, uint32_t id) {
+  struct wl_resource *resource;
 
+  // 创建一个新的资源实例
+  resource = wl_resource_create(client, &llp_interface_interface, version, id);
+
+  // 将我们的实现与新创建的资源关联起来
+  wl_resource_set_implementation(resource, &my_implementation, NULL, NULL);
+}
 struct switcher
 {
 	struct desktop_shell *shell;
@@ -5630,7 +5651,7 @@ wet_shell_init(struct weston_compositor *ec,
 						 &weston_desktop_shell_interface, 1,
 						 shell, bind_desktop_shell) == NULL)
 		return -1;
-
+    wl_global_create(ec->wl_display,&llp_interface_interface, 1, NULL, bind_my_interface);
 	weston_compositor_get_time(&shell->child.deathstamp);
 
 	shell->panel_position = WESTON_DESKTOP_SHELL_PANEL_POSITION_TOP;
