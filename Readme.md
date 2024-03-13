@@ -1,4 +1,4 @@
-1.创建一个位置自己定义的表面
+##1.创建一个位置自己定义的表面
 ```c
     struct weston_layer *my_layer = zalloc(sizeof(*my_layer));
 	weston_layer_init(my_layer,shsurf->shell->compositor);
@@ -10,7 +10,7 @@
     weston_view_set_position(view1, 0,0);
 	weston_layer_entry_insert(&my_layer->view_list,&view1->layer_link);
 ```
-2.通过xdg_shell解决客户端指定位置的问题.
+##2.通过xdg_shell解决客户端指定位置的问题.
     在shell.h 里面定义需要数据交换的结构体，在xdg_shell.c 处理好xdg协议后，将需要交换的数据写入结构体，通过“__attribute__((visibility("default")))” 设置符号可见，让shell.c可以调用。
 2-1.shell.h
 ![Alt text](./LLP_IMAGE/2-1-1.png)
@@ -79,3 +79,94 @@ desktop_surface_committed(struct weston_desktop_surface *desktop_surface,
     ...
 }
 ```
+
+## 3.扩展协议，加入llp_protocol.xml 和LLP_extension.xml
+步骤1.生成对应的.c和.h文件。详见协议扩展
+then:
+shell.h
+#include "llp_protocol-server-protocol.h"
+#include "LLP_extension-server-protocol.h"
+
+shell.c
+```c
+/*llp_protocaol*/
+static void my_function1(struct wl_client *client, struct wl_resource *resource, int32_t x, int32_t y, int32_t w, int32_t h) {
+  // 这里处理您的业务逻辑。例如，保存这些参数或者更改窗口的大小等。
+  printf("Function1 called with x=%d, y=%d, w=%d, h=%d\n", x, y, w, h);
+
+  // 假设我们需要响应客户端
+  llp_interface_send_onfunction1(resource, x, y, w, h);
+
+}
+
+// 这个结构体定义了接口的实现，它包含了接口中函数的实际实现
+static const struct llp_interface_interface my_implementation = {
+    my_function1,
+};
+
+/*LLP_extension*/
+static void get_touch(struct wl_client *client, struct wl_resource *resource, int32_t x, int32_t y, int32_t w, int32_t h,int32_t touch_event) {
+  printf("get_touch called with x=%d, y=%d, w=%d, h=%d, touch_event = %d\n", x, y, w, h,touch_event);
+
+  // 响应客户端
+  llp_touch_send_send_touch_event(resource,x, y, w, h,touch_event);
+}
+static const struct llp_touch_interface linterface = {
+	get_touch,
+};
+...
+......
+
+static void bind_my_interface(struct wl_client *client, void *data, uint32_t version, uint32_t id) {
+  struct wl_resource *resource;
+
+  // 创建一个新的资源实例
+  resource = wl_resource_create(client, &llp_interface_interface, version, id);
+
+  // 将我们的实现与新创建的资源关联起来
+  wl_resource_set_implementation(resource, &my_implementation, NULL, NULL);
+}
+
+/*LLP_extension_protocol*/
+static void bind_llp_interface(struct wl_client *client, void *data, uint32_t version, uint32_t id) {
+  struct wl_resource *resource;
+
+  // 创建一个新的资源实例
+  resource = wl_resource_create(client, &llp_touch_interface, version, id);
+
+  // 将我们的实现与新创建的资源关联起来
+  wl_resource_set_implementation(resource, &linterface, NULL, NULL);
+}
+...
+.......
+
+WL_EXPORT int
+wet_shell_init(struct weston_compositor *ec,
+			   int *argc, char *argv[])
+{
+...
+......
+if (wl_global_create(ec->wl_display,
+						 &weston_desktop_shell_interface, 1,
+						 shell, bind_desktop_shell) == NULL)
+		return -1;
+    wl_global_create(ec->wl_display,&llp_interface_interface, 1, NULL, bind_my_interface);
+	wl_global_create(ec->wl_display,&llp_touch_interface, 1, NULL, bind_llp_interface);
+...
+......
+}
+```
+
+meson_build
+
+srcs_shell_desktop = [
+		'shell.c',
+		'exposay.c',
+		'input-panel.c',
+		'llp_protocol.c',   //add
+		'LLP_extension.c',  //add
+		weston_desktop_shell_server_protocol_h,
+		weston_desktop_shell_protocol_c,
+		input_method_unstable_v1_server_protocol_h,
+		input_method_unstable_v1_protocol_c,
+]

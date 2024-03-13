@@ -46,6 +46,7 @@
 #define DEFAULT_NUM_WORKSPACES 1
 #define DEFAULT_WORKSPACE_CHANGE_ANIMATION_LENGTH 200
 
+/*llp_protocaol*/
 static void my_function1(struct wl_client *client, struct wl_resource *resource, int32_t x, int32_t y, int32_t w, int32_t h) {
   // 这里处理您的业务逻辑。例如，保存这些参数或者更改窗口的大小等。
   printf("Function1 called with x=%d, y=%d, w=%d, h=%d\n", x, y, w, h);
@@ -58,6 +59,18 @@ static void my_function1(struct wl_client *client, struct wl_resource *resource,
 // 这个结构体定义了接口的实现，它包含了接口中函数的实际实现
 static const struct llp_interface_interface my_implementation = {
     my_function1,
+};
+
+/*LLP_extension*/
+struct wl_resource *lresource;
+static void get_touch(struct wl_client *client, struct wl_resource *resource, int32_t x, int32_t y, int32_t w, int32_t h,int32_t touch_event) {
+  printf("get_touch called with x=%d, y=%d, w=%d, h=%d, touch_event = %d\n", x, y, w, h,touch_event);
+  lresource = resource;
+  // 响应客户端
+  llp_touch_send_send_touch_event(resource,x, y, w, h,touch_event);
+}
+static const struct llp_touch_interface linterface = {
+	get_touch,
 };
 struct focus_state
 {
@@ -280,7 +293,7 @@ shell_surface_get_label(struct weston_surface *surface, char *buf, size_t len)
 
 	t = weston_desktop_surface_get_title(desktop_surface);
 	c = weston_desktop_surface_get_app_id(desktop_surface);
-
+    printf("LLP:shell.c shell_surface_get_label,the app id = %d\n",c);
 	return snprintf(buf, len, "%s window%s%s%s%s%s",
 					"top-level",
 					t ? " '" : "", t ?: "", t ? "'" : "",
@@ -431,7 +444,7 @@ void get_output_work_area(struct desktop_shell *shell,
 		area->height = output->height;
 		break;
 	}
-	printf("LLP:get_output_work_area>output->x=%d output->y=%d\n", output->x, output->y);
+	printf("LLP:get_output_work_area>output->x=%d output->y=%d, %d,%d,%d,%d\n", output->x, output->y,area->x,area->y,area->width,area->height);
 }
 
 static void
@@ -1735,13 +1748,13 @@ surface_move(struct shell_surface *shsurf, struct weston_pointer *pointer,
 	// weston_layer_init(my_layer, shsurf->shell->compositor);
 	// weston_layer_set_position(my_layer, 0x40000000);
 	// surface = weston_surface_create(shsurf->shell->compositor);
-	// weston_surface_set_color(surface, 1.0, 0.0, 0.0, 0.0);
+	// weston_surface_set_color(surface, 1.0, 1.0, 0.0, 0.0);
 	// weston_surface_set_size(surface, 500, 700);
 	// view1 = weston_view_create(surface); // view1 of SURLLP
+	//weston_view_set_mask(view1,0,0,300,300);
 	// weston_view_set_position(view1, 0, 0);
 	// weston_layer_entry_insert(&my_layer->view_list, &view1->layer_link);
-	// weston_view_destroy(view1);
-
+	//weston_view_destroy(view1);
 	struct weston_move_grab *move;
 
 	if (!shsurf)
@@ -4882,6 +4895,17 @@ static void bind_my_interface(struct wl_client *client, void *data, uint32_t ver
   // 将我们的实现与新创建的资源关联起来
   wl_resource_set_implementation(resource, &my_implementation, NULL, NULL);
 }
+
+/*LLP_extension_protocol*/
+static void bind_llp_interface(struct wl_client *client, void *data, uint32_t version, uint32_t id) {
+  struct wl_resource *resource;
+
+  // 创建一个新的资源实例
+  resource = wl_resource_create(client, &llp_touch_interface, version, id);
+
+  // 将我们的实现与新创建的资源关联起来
+  wl_resource_set_implementation(resource, &linterface, NULL, NULL);
+}
 struct switcher
 {
 	struct desktop_shell *shell;
@@ -5652,6 +5676,7 @@ wet_shell_init(struct weston_compositor *ec,
 						 shell, bind_desktop_shell) == NULL)
 		return -1;
     wl_global_create(ec->wl_display,&llp_interface_interface, 1, NULL, bind_my_interface);
+	wl_global_create(ec->wl_display,&llp_touch_interface, 1, NULL, bind_llp_interface);
 	weston_compositor_get_time(&shell->child.deathstamp);
 
 	shell->panel_position = WESTON_DESKTOP_SHELL_PANEL_POSITION_TOP;
