@@ -1,0 +1,549 @@
+weston.ini(5)                 File Formats Manual                weston.ini(5)
+
+
+
+NNAAMMEE
+       weston.ini - configuration file for WWeessttoonn - the reference Wayland com-
+       positor
+
+IINNTTRROODDUUCCTTIIOONN
+       WWeessttoonn obtains configuration from its command line parameters  and  the
+       configuration file described here.
+
+DDEESSCCRRIIPPTTIIOONN
+       WWeessttoonn  uses a configuration file called _w_e_s_t_o_n_._i_n_i for its setup.  The
+       _w_e_s_t_o_n_._i_n_i configuration file is searched for in one of  the  following
+       places when the server is started:
+
+           $$XXDDGG__CCOONNFFIIGG__HHOOMMEE//wweessttoonn..iinnii   (if $XDG_CONFIG_HOME is set)
+           $$HHOOMMEE//..ccoonnffiigg//wweessttoonn..iinnii      (if $HOME is set)
+           wweessttoonn//wweessttoonn..iinnii iinn eeaacchh
+               $$XXDDGG__CCOONNFFIIGG__DDIIRR           (if $XDG_CONFIG_DIRS is set)
+           //eettcc//xxddgg//wweessttoonn//wweessttoonn..iinnii    (if $XDG_CONFIG_DIRS is not set)
+
+       where  environment  variable  $$HHOOMMEE  is  the user's home directory, and
+       $$XXDDGG__CCOONNFFIIGG__HHOOMMEE is the  user  specific  configuration  directory,  and
+       $$XXDDGG__CCOONNFFIIGG__DDIIRRSS  is a colon ''::'' delimited listed of configuration base
+       directories, such as //eettcc//xxddgg--ffoooo:://eettcc//xxddgg.
+
+       The _w_e_s_t_o_n_._i_n_i file is composed of a number of sections  which  may  be
+       present  in  any order, or omitted to use default configuration values.
+       Each section has the form:
+
+           [[_S_e_c_t_i_o_n_H_e_a_d_e_r]]
+           Key1=Value1
+           Key2=Value2
+               ...
+
+       The spaces are significant.  Comment lines are ignored:
+
+           _#_c_o_m_m_e_n_t
+
+       The section headers are:
+
+           ccoorree           The core modules and options
+           lliibbiinnppuutt       Input device configuration
+           sshheellll          Desktop customization
+           llaauunncchheerr       Add launcher to the panel
+           oouuttppuutt         Output configuration
+           iinnppuutt--mmeetthhoodd   Onscreen keyboard input
+           kkeeyybbooaarrdd       Keyboard layouts
+           tteerrmmiinnaall       Terminal application options
+           xxwwaayyllaanndd       XWayland options
+           ssccrreeeenn--sshhaarree   Screen sharing options
+
+       Possible value types are string, signed and  unsigned  32-bit  integer,
+       and  boolean. Strings must not be quoted, do not support any escape se-
+       quences, and run till the end of the line. Integers  can  be  given  in
+       decimal  (e.g.  123),  octal  (e.g.  0173), and hexadecimal (e.g. 0x7b)
+       form. Boolean values can be only 'true' or 'false'.
+
+CCOORREE SSEECCTTIIOONN
+       The ccoorree section is used to select the startup compositor  modules  and
+       general options.
+
+       sshheellll==_d_e_s_k_t_o_p_-_s_h_e_l_l_._s_o
+              specifies  a  shell  to  load (string). This can be used to load
+              your own implemented shell or one with Weston as default. Avail-
+              able shells in the _@_w_e_s_t_o_n___m_o_d_u_l_e_s___d_i_r_@ directory are:
+
+                 ddeesskkttoopp--sshheellll..ssoo
+
+       xxwwaayyllaanndd==_t_r_u_e
+              ask Weston to load the XWayland module (boolean).
+
+       mmoodduulleess==_c_m_s_-_c_o_l_o_r_d_._s_o_,_s_c_r_e_e_n_-_s_h_a_r_e_._s_o
+              specifies the modules to load (string). Available modules in the
+              _@_w_e_s_t_o_n___m_o_d_u_l_e_s___d_i_r_@ directory are:
+
+                 ccmmss--ccoolloorrdd..ssoo
+                 ssccrreeeenn--sshhaarree..ssoo
+
+       bbaacckkeenndd==_h_e_a_d_l_e_s_s_-_b_a_c_k_e_n_d_._s_o
+              overrides defaults backend. Available  backend  modules  in  the
+              _@_l_i_b_w_e_s_t_o_n___m_o_d_u_l_e_s___d_i_r_@ directory are:
+
+                 ddrrmm--bbaacckkeenndd..ssoo
+                 ffbbddeevv--bbaacckkeenndd..ssoo
+                 hheeaaddlleessss--bbaacckkeenndd..ssoo
+                 rrddpp--bbaacckkeenndd..ssoo
+                 wwaayyllaanndd--bbaacckkeenndd..ssoo
+                 xx1111--bbaacckkeenndd..ssoo
+
+       rreeppaaiinntt--wwiinnddooww==_N
+              Set  the  approximate  length of the repaint window in millisec-
+              onds. The repaint window is used to control and reduce the  out-
+              put latency for clients. If the window is longer than the output
+              refresh period, the repaint will be done  immediately  when  the
+              previous repaint finishes, not processing client requests in be-
+              tween. If the repaint window is too short,  the  compositor  may
+              miss  the  target vertical blank, increasing output latency. The
+              default value is 7 milliseconds. The allowed range is  from  -10
+              to 1000 milliseconds. Using a negative value will force the com-
+              positor to always miss the target vblank.
+
+       ggbbmm--ffoorrmmaatt==_f_o_r_m_a_t
+              sets the GBM format used for the framebuffer for the  GBM  back-
+              end. Can be xxrrggbb88888888,, xxrrggbb22110011001100,, rrggbb556655..  By default, xrgb8888
+              is used.
+
+       iiddllee--ttiimmee==_s_e_c_o_n_d_s
+              sets Weston's idle timeout in seconds. This idle timeout is  the
+              time after which Weston will enter an "inactive" mode and screen
+              will fade to black. A value of 0 disables the timeout.
+
+              _I_m_p_o_r_t_a_n_t : This option may also be set via Weston's  '-i'  com-
+              mand  line option and will take precedence over the current .ini
+              option. This means that if both weston.ini and command line  de-
+              fine  this  idle-timeout time, the one specified in the command-
+              line will be used. On the other hand, if none of these sets  the
+              value, default idle timeout will be set to 300 seconds.
+
+       rreeqquuiirree--iinnppuutt==_t_r_u_e
+              require an input device for launch
+
+       ppaaggeefflliipp--ttiimmeeoouutt==_m_i_l_l_i_s_e_c_o_n_d_s
+              sets  Weston's  pageflip  timeout  in milliseconds.  This sets a
+              timer to exit gracefully with a log message and an exit code  of
+              1  in  case  the  DRM driver is non-responsive.  Setting it to 0
+              disables this feature.
+
+       wwaaiitt--ffoorr--ddeebbuuggggeerr==_t_r_u_e
+              Raises SIGSTOP before initializing the compositor.  This  allows
+              the  user  to  attach  with a debugger and continue execution by
+              sending SIGCONT. This is useful for debugging a crash on  start-
+              up  when it would be inconvenient to launch weston directly from
+              a debugger. Boolean, defaults to ffaallssee.  There is also a command
+              line option to do the same.
+
+       rreemmoottiinngg==_r_e_m_o_t_i_n_g_-_p_l_u_g_i_n_._s_o
+              specifies  a plugin for remote output to load (string). This can
+              be used to load your own implemented remoting plugin or one with
+              Weston  as  default.  Available remoting plugins in the _____l_i_b_w_e_-
+              _s_t_o_n___m_o_d_u_l_e_s___d_i_r____ directory are:
+
+                 rreemmoottiinngg--pplluuggiinn..ssoo
+
+       uussee--ppiixxmmaann==_t_r_u_e
+              Enables pixman-based rendering for all outputs on backends  that
+              support  it.   Boolean, defaults to ffaallssee.  There is also a com-
+              mand line option to do the same.
+
+
+LLIIBBIINNPPUUTT SSEECCTTIIOONN
+       The lliibbiinnppuutt section is used to configure input devices when using  the
+       libinput  input device backend. The defaults are determined by libinput
+       and vary according to what is most sensible for any given device.
+
+       Available configuration are:
+
+       eennaabbllee--ttaapp==_f_a_l_s_e
+              Enables tap to click on touchpad devices.
+
+       ttaapp--aanndd--ddrraagg==_f_a_l_s_e
+              For touchpad devices with eennaabbllee--ttaapp enabled. If the user  taps,
+              then  taps  a  second time, this time holding, the virtual mouse
+              button stays down for as long as the user keeps their finger  on
+              the  touchpad,  allowing  the  user  to click and drag with taps
+              alone.
+
+       ttaapp--aanndd--ddrraagg--lloocckk==_f_a_l_s_e
+              For touchpad devices with eennaabbllee--ttaapp and  ttaapp--aanndd--ddrraagg  enabled.
+              In the middle of a tap-and-drag, if the user releases the touch-
+              pad for less than a certain number of milliseconds, then touches
+              it  again,  the virtual mouse button will remain pressed and the
+              drag can continue.
+
+       ddiissaabbllee--wwhhiillee--ttyyppiinngg==_t_r_u_e
+              For devices that may be accidentally triggered while  typing  on
+              the keyboard, causing a disruption of the typing.  Disables them
+              while the keyboard is in use.
+
+       mmiiddddllee--bbuuttttoonn--eemmuullaattiioonn==_f_a_l_s_e
+              For pointer devices with left and right buttons, but  no  middle
+              button.  When enabled, a middle button event is emitted when the
+              left and right buttons are pressed simultaneously.
+
+       lleefftt--hhaannddeedd==_f_a_l_s_e
+              Configures the device for use  by  left-handed  people.  Exactly
+              what  this  option does depends on the device. For pointers with
+              left and right buttons, the buttons are swapped. On tablets, the
+              tablet is logically turned upside down, because it will be phys-
+              ically turned upside down.
+
+       rroottaattiioonn==_n
+              Changes the direction of the logical north, rotating  it  _n  de-
+              grees  clockwise away from the default orientation, where _n is a
+              whole number between 0 and 359 inclusive. Needed for trackballs,
+              mainly.  Allows  the  user to orient the trackball sideways, for
+              example.
+
+       aacccceell--pprrooffiillee==_{_f_l_a_t_,_a_d_a_p_t_i_v_e_}
+              Set the pointer acceleration profile. The pointer's screen speed
+              is proportional to the physical speed with a certain constant of
+              proportionality.  Call that constant  alpha.  _f_l_a_t  keeps  alpha
+              fixed.  See aacccceell--ssppeeeedd.  _a_d_a_p_t_i_v_e causes alpha to increase with
+              physical speed, giving the user more control when the  speed  is
+              slow,  and  more  reach when the speed is high.  _a_d_a_p_t_i_v_e is the
+              default.
+
+       aacccceell--ssppeeeedd==_v
+              If aacccceell--pprrooffiillee is set to _f_l_a_t, it simply sets the value of al-
+              pha.   If  aacccceell--pprrooffiillee  is set to _a_d_a_p_t_i_v_e, the effect is more
+              complicated,  but  generally  speaking,  it  will   change   the
+              pointer's speed.  _v is normalised and must lie in the range [-1,
+              1]. The exact mapping between _v and alpha is hardware-dependent,
+              but higher values cause higher cursor speeds.
+
+       nnaattuurraall--ssccrroollll==_f_a_l_s_e
+              Enables  natural  scrolling,  mimicking  the behaviour of touch-
+              screen scrolling.  That is, if the wheel, finger, or fingers are
+              moved  down,  the  surface is scrolled up instead of down, as if
+              the finger, or fingers were in contact with  the  surface  being
+              scrolled.
+
+       ssccrroollll--mmeetthhoodd==_{_t_w_o_-_f_i_n_g_e_r_,_e_d_g_e_,_b_u_t_t_o_n_,_n_o_n_e_}
+              Sets the scroll method. _t_w_o_-_f_i_n_g_e_r scrolls with two fingers on a
+              touchpad. _e_d_g_e scrolls with one finger on the right  edge  of  a
+              touchpad.  _b_u_t_t_o_n scrolls when the pointer is moved while a cer-
+              tain  button  is  pressed.  See  ssccrroollll--bbuuttttoonn.  _n_o_n_e   disables
+              scrolling altogether.
+
+       ssccrroollll--bbuuttttoonn==_{_B_T_N___L_E_F_T_,_B_T_N___R_I_G_H_T_,_B_T_N___M_I_D_D_L_E_,_._._._}
+              For devices with ssccrroollll--mmeetthhoodd set to _b_u_t_t_o_n. Specifies the but-
+              ton that will trigger scrolling.  See  /usr/include/linux/input-
+              event-codes.h for the complete list of possible values.
+
+       ttoouucchhssccrreeeenn__ccaalliibbrraattoorr==_t_r_u_e
+              Advertise  the  touchscreen calibrator interface to all clients.
+              This is a  potential  denial-of-service  attack  vector,  so  it
+              should  only  be enabled on trusted userspace. Boolean, defaults
+              to ffaallssee.
+
+              The interface is required for running touchscreen calibrator ap-
+              plications.  It  provides  the application raw touch events, by-
+              passing the normal touch handling.  It also allows the  applica-
+              tion to upload a new calibration into the compositor.
+
+              Even  though  this  option is listed in the libinput section, it
+              does affect all Weston configurations  regardless  of  the  used
+              backend. If the backend does not use libinput, the interface can
+              still be advertised, but it will not list any devices.
+
+       ccaalliibbrraattiioonn__hheellppeerr==_/_b_i_n_/_e_c_h_o
+              An optional calibration helper program to permanently save a new
+              touchscreen calibration. String, defaults to unset.
+
+              The  given  program will be executed with seven arguments when a
+              calibrator application requests the server to take a  new  cali-
+              bration  matrix into use.  The program is executed synchronously
+              and will therefore block Weston for its duration. If the program
+              exit  status is non-zero, Weston will not apply the new calibra-
+              tion. If the helper is unset or the program exit status is zero,
+              Weston will use the new calibration immediately.
+
+              The program is invoked as:
+
+                 _c_a_l_i_b_r_a_t_i_o_n___h_e_l_p_e_r _s_y_s_p_a_t_h _m_1 _m_2 _m_3 _m_4 _m_5 _m_6
+
+              where  _s_y_s_p_a_t_h  is  the  udev  sys  path  for  the device and _m_1
+              through _m_6 are the calibration matrix elements in libinput's LLII--
+              BBIINNPPUUTT__CCAALLIIBBRRAATTIIOONN__MMAATTRRIIXX udev property format.  The sys path is
+              an absolute path and starts with the sys mount point.
+
+
+SSHHEELLLL SSEECCTTIIOONN
+       The sshheellll section is used to customize the compositor.  Some  keys  may
+       not be handled by different shell plugins.
+
+       The entries that can appear in this section are:
+
+       cclliieenntt==_f_i_l_e
+              sets the path for the shell client to run. If not specified _@_w_e_-
+              _s_t_o_n___s_h_e_l_l___c_l_i_e_n_t_@ is launched (string).
+
+       bbaacckkggrroouunndd--iimmaaggee==_f_i_l_e
+              sets the path for the background image file (string).
+
+       bbaacckkggrroouunndd--ttyyppee==_t_i_l_e
+              determines how the background image is drawn  (string).  Can  be
+              cceenntteerreedd,  ssccaallee,  ssccaallee--ccrroopp or ttiillee (default).  Centered shows
+              the image once centered. If the image is smaller than  the  out-
+              put, the rest of the surface will be in background color. If the
+              image size does fit the output  it  will  be  cropped  left  and
+              right,  or top and bottom.  Scale means scaled to fit the output
+              precisely, not preserving aspect  ratio.   Scale-crop  preserves
+              aspect  ratio,  scales  the  background image just big enough to
+              cover the output, and centers it. The image ends up cropped from
+              left  and right, or top and bottom, if the aspect ratio does not
+              match the output. Tile repeats the background image to fill  the
+              output.
+
+       bbaacckkggrroouunndd--ccoolloorr==_0_x_A_A_R_R_G_G_B_B
+              sets  the  color of the background (unsigned integer). The hexa-
+              decimal digit pairs are in order alpha, red, green, and blue.
+
+       cclloocckk--ffoorrmmaatt==_f_o_r_m_a_t
+              sets the panel clock format (string). Can be nnoonnee, mmiinnuutteess, sseecc--
+              oonnddss.  By default, minutes format is used.
+
+       ppaanneell--ccoolloorr==_0_x_A_A_R_R_G_G_B_B
+              sets  the color of the panel (unsigned integer). The hexadecimal
+              digit pairs are in order transparency, red, green, and blue. Ex-
+              amples:
+
+                 00xxffffffff00000000    Red
+                 00xxffff0000ffff0000    Green
+                 00xxffff00000000ffff    Blue
+                 00xx0000ffffffffffff    Fully transparent
+
+       ppaanneell--ppoossiittiioonn==_t_o_p
+              sets  the  position  of  the panel (string). Can be ttoopp,, bboottttoomm,,
+              lleefftt,, rriigghhtt,, nnoonnee..
+
+       lloocckkiinngg==_t_r_u_e
+              enables screen locking (boolean).
+
+       aanniimmaattiioonn==_z_o_o_m
+              sets the effect used for opening new windows  (string).  Can  be
+              zzoooomm,, ffaaddee,, nnoonnee..  By default, no animation is used.
+
+       cclloossee--aanniimmaattiioonn==_f_a_d_e
+              sets the effect used when closing windows (string). Can be ffaaddee,,
+              nnoonnee..  By default, the fade animation is used.
+
+       ssttaarrttuupp--aanniimmaattiioonn==_f_a_d_e
+              sets the effect used for opening new windows  (string).  Can  be
+              ffaaddee,, nnoonnee..  By default, the fade animation is used.
+
+       ffooccuuss--aanniimmaattiioonn==_d_i_m_-_l_a_y_e_r
+              sets the effect used with the focused and unfocused windows. Can
+              be ddiimm--llaayyeerr,, nnoonnee..  By default, no animation is used.
+
+       aallllooww--zzaapp==_t_r_u_e
+              whether the shell should quit when  the  Ctrl-Alt-Backspace  key
+              combination is pressed
+
+       bbiinnddiinngg--mmooddiiffiieerr==_c_t_r_l
+              sets the modifier key used for common bindings (string), such as
+              moving surfaces, resizing, rotating, switching, closing and set-
+              ting the transparency for windows, controlling the backlight and
+              zooming the desktop. See wweessttoonn--bbiinnddiinnggss(7).   Possible  values:
+              none, ctrl, alt, super (default)
+
+       nnuumm--wwoorrkkssppaacceess==_6
+              defines  the  number  of workspaces (unsigned integer). The user
+              can switch workspaces by using the binding+F1, F2 keys. If  this
+              key is not set, fall back to one workspace.
+
+       ccuurrssoorr--tthheemmee==_t_h_e_m_e
+              sets the cursor theme (string).
+
+       ccuurrssoorr--ssiizzee==_2_4
+              sets the cursor size (unsigned integer).
+
+       lloocckkssccrreeeenn--iiccoonn==_p_a_t_h
+              sets  the path to lock screen icon image (string). (tablet shell
+              only)
+
+       lloocckkssccrreeeenn==_p_a_t_h
+              sets the path to lock screen background image (string).  (tablet
+              shell only)
+
+       hhoommeessccrreeeenn==_p_a_t_h
+              sets  the path to home screen background image (string). (tablet
+              shell only)
+
+LLAAUUNNCCHHEERR SSEECCTTIIOONN
+       There can be multiple launcher sections, one for each launcher.
+
+       iiccoonn==_i_c_o_n
+              sets the path to icon image (string). Svg images  are  not  cur-
+              rently supported.
+
+       ppaatthh==_p_r_o_g_r_a_m
+              sets  the  path  to  the program that is run by clicking on this
+              launcher (string).  It is possible to pass arguments  and  envi-
+              ronment variables to the program. For example:
+
+                  path=GDK_BACKEND=wayland gnome-terminal --full-screen
+
+OOUUTTPPUUTT SSEECCTTIIOONN
+       There  can  be multiple output sections, each corresponding to one out-
+       put. It is currently only recognized by the drm and x11 backends.
+
+       nnaammee==_n_a_m_e
+              sets a name for the output (string). The backend uses  the  name
+              to identify the output. All X11 output names start with a letter
+              X.  All Wayland output names start with  the  letters  WL.   The
+              available output names for DRM backend are listed in the wweessttoonn--
+              llaauunncchh((11)) output.  Examples of usage:
+
+                 LLVVDDSS11    DRM backend, Laptop internal panel no.1
+                 VVGGAA11     DRM backend, VGA connector no.1
+                 XX11       X11 backend, X window no.1
+                 WWLL11      Wayland backend, Wayland window no.1
+
+              See wweessttoonn--ddrrmm((77)) for more details.
+
+       mmooddee==_m_o_d_e
+              sets the output mode (string). The  mode  parameter  is  handled
+              differently  depending  on  the  backend. On the X11 backend, it
+              just sets the WIDTHxHEIGHT of the weston window.  The DRM  back-
+              end  accepts different modes, along with an option of a modeline
+              string.
+
+              See wweessttoonn--ddrrmm((77)) for examples of modes-formats supported by DRM
+              backend.
+
+       ttrraannssffoorrmm==_n_o_r_m_a_l
+              How  you  have  rotated your monitor from its normal orientation
+              (string).  The transform key can  be  one  of  the  following  8
+              strings:
+
+                 nnoorrmmaall               Normal output.
+                 rroottaattee--9900            90 degrees clockwise.
+                 rroottaattee--118800           Upside down.
+                 rroottaattee--227700           90 degrees counter clockwise.
+                 fflliippppeedd              Horizontally flipped
+                 fflliippppeedd--rroottaattee--9900    Flipped and 90 degrees clockwise
+                 fflliippppeedd--rroottaattee--118800   Flipped and upside down
+                 fflliippppeedd--rroottaattee--227700   Flipped and 90 degrees counter clockwise
+
+       ssccaallee==_f_a_c_t_o_r
+              The  scaling multiplier applied to the entire output, in support
+              of high resolution ("HiDPI" or "retina") displays, that  roughly
+              corresponds to the pixel ratio of the display's physical resolu-
+              tion to the logical resolution.  Applications that do  not  sup-
+              port  high resolution displays typically appear tiny and unread-
+              able. Weston will scale the output of such applications by  this
+              multiplier,  to make them readable. Applications that do support
+              their own output scaling can draw their content in high  resolu-
+              tion,  in  which case they avoid compositor scaling. Weston will
+              not scale the output of such applications, and they are not  af-
+              fected by this multiplier.
+
+              An  integer,  1  by default, typically configured as 2 or higher
+              when needed, denoting the scaling multiplier for the output.
+
+       sseeaatt==_n_a_m_e
+              The logical seat name that  this  output  should  be  associated
+              with.  If  this is set then the seat's input will be confined to
+              the output that has the seat set on it. The expectation is  that
+              this  functionality  will  be  used in a multiheaded environment
+              with a single compositor for multiple output and input  configu-
+              rations. The default seat is called "default" and will always be
+              present. This seat can be constrained like any other.
+
+       aallllooww__hhddccpp==_t_r_u_e
+              Allows HDCP support for this output. If set to true, HDCP can be
+              tried  for  the content-protection, provided by the backends, on
+              this output. By default, HDCP support is always allowed  for  an
+              output. The content-protection can actually be realized, only if
+              the hardware (source and sink) support HDCP, and the backend has
+              the  implementation  of  content-protection protocol. Currently,
+              HDCP is supported by drm-backend.
+
+       aapppp--iiddss==_a_p_p_-_i_d_[_,_a_p_p___i_d_]_*
+              A comma separated list of the IDs of applications  to  place  on
+              this  output.  These IDs should match the application IDs as set
+              with the xdg_shell.set_app_id request. Currently, this option is
+              supported by kiosk-shell.
+
+IINNPPUUTT--MMEETTHHOODD SSEECCTTIIOONN
+       ppaatthh==_@_w_e_s_t_o_n___l_i_b_e_x_e_c_d_i_r_@_/_w_e_s_t_o_n_-_k_e_y_b_o_a_r_d
+              sets the path of the on screen keyboard input method (string).
+
+KKEEYYBBOOAARRDD SSEECCTTIIOONN
+       This section contains the following keys:
+
+       kkeeyymmaapp__rruulleess==_e_v_d_e_v
+              sets  the  keymap  rules  file  (string). Used to map layout and
+              model to input device.
+
+       kkeeyymmaapp__mmooddeell==_p_c_1_0_5
+              sets the keymap model (string). See the Models section in  xxkkeeyy--
+              bbooaarrdd--ccoonnffiigg((77))..
+
+       kkeeyymmaapp__llaayyoouutt==_u_s_,_d_e_,_g_b
+              sets the comma separated list of keyboard layout codes (string).
+              See the Layouts section in xxkkeeyybbooaarrdd--ccoonnffiigg((77))..
+
+       kkeeyymmaapp__vvaarriiaanntt==_e_u_r_o_,_,_i_n_t_l
+              sets the  comma  separated  list  of  keyboard  layout  variants
+              (string).  The number of variants must be the same as the number
+              of layouts above. See  the  Layouts  section  in  xxkkeeyybbooaarrdd--ccoonn--
+              ffiigg((77))..
+
+       kkeeyymmaapp__ooppttiioonnss==_g_r_p_:_a_l_t___s_h_i_f_t___t_o_g_g_l_e_,_g_r_p___l_e_d_:_s_c_r_o_l_l
+              sets  the  keymap  options  (string). See the Options section in
+              xxkkeeyybbooaarrdd--ccoonnffiigg((77))..
+
+       rreeppeeaatt--rraattee==_4_0
+              sets the rate of repeating keys in characters  per  second  (un-
+              signed integer)
+
+       rreeppeeaatt--ddeellaayy==_4_0_0
+              sets  the  delay  in milliseconds since key down until repeating
+              starts (unsigned integer)
+
+       nnuummlloocckk--oonn==_f_a_l_s_e
+              sets the default state of the numlock on weston startup for  the
+              backends which support it.
+
+       vvtt--sswwiittcchhiinngg==_t_r_u_e
+              Whether  to  allow  the  use  of Ctrl+Alt+Fn key combinations to
+              switch away from the compositor's virtual console.
+
+TTEERRMMIINNAALL SSEECCTTIIOONN
+       Contains settings for the weston  terminal  application  (weston-termi-
+       nal). It allows to customize the font and shell of the command line in-
+       terface.
+
+       ffoonntt==_D_e_j_a_V_u _S_a_n_s _M_o_n_o
+              sets the font of the terminal (string). For a good experience it
+              is  recommended  to use monospace fonts. In case the font is not
+              found, the default one is used.
+
+       ffoonntt--ssiizzee==_1_4
+              sets the size of the terminal font (unsigned integer).
+
+       tteerrmm==_x_t_e_r_m_-_2_5_6_c_o_l_o_r
+              The terminal shell (string). Sets the $TERM variable.
+
+XXWWAAYYLLAANNDD SSEECCTTIIOONN
+       ppaatthh==_@_x_s_e_r_v_e_r___p_a_t_h_@
+              sets the path to the xserver to run (string).
+
+SSCCRREEEENN--SSHHAARREE SSEECCTTIIOONN
+       ccoommmmaanndd==_@_w_e_s_t_o_n___b_i_n_d_i_r_@_/_w_e_s_t_o_n                 _-_-_b_a_c_k_e_n_d_=_r_d_p_-_b_a_c_k_e_n_d_._s_o
+       _-_-_s_h_e_l_l_=_f_u_l_l_s_c_r_e_e_n_-_s_h_e_l_l_._s_o _-_-_n_o_-_c_l_i_e_n_t_s_-_r_e_s_i_z_e
+              sets  the  command to start a fullscreen-shell server for screen
+              sharing (string).
+
+SSEEEE AALLSSOO
+       wweessttoonn(1), wweessttoonn--bbiinnddiinnggss(7), wweessttoonn--ddrrmm(7), xxkkeeyybbooaarrdd--ccoonnffiigg(7)
+
+
+
+Weston @version@                  2019-03-26                     weston.ini(5)

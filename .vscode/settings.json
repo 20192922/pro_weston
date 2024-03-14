@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "zalloc.h": "c",
+        "config.h": "c",
+        "weston-desktop-shell-server-protocol.h": "c",
+        "internal.h": "c",
+        "shell.h": "c",
+        "xdg-shell-server-protocol.h": "c",
+        "input-timestamps-unstable-v1-server-protocol.h": "c",
+        "libinput.h": "c"
+    }
+}

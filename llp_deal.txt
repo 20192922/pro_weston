@@ -1,0 +1,48 @@
+/*运行客户端于指定图层，并设置mask*/
+
+diff --git a/shell.c b/shell.c
+index 32b939b..bfa3f5f 100755
+--- a/shell.c
++++ b/shell.c
+@@ -46,6 +46,15 @@
+ #define DEFAULT_NUM_WORKSPACES 1
+ #define DEFAULT_WORKSPACE_CHANGE_ANIMATION_LENGTH 200
+ 
++static struct weston_layer *                //从视图中获得视图所在的层
++get_view_layer(struct weston_view *view)
++{
++	if (view->parent_view)
++		return get_view_layer(view->parent_view);
++	return view->layer_link.layer;
++}
+ 
+ /*2024-3-14:目前最大的问题是，应用启动在我指定的图层后，会变回原图层-WESTON_LAYER_POSITION_NORM，如果将WESTON_LAYER_POSITION_NORM设置mask，所有应用-非全屏，非隐藏都会受影响*/
+@@ -2833,6 +2843,16 @@ map(struct desktop_shell *shell, struct shell_surface *shsurf,
+ 			break;
+ 		}
+ 	}
++	weston_layer_entry_remove(&shsurf->view->layer_link);//在map中，其实已经将应用放在WESTON_LAYER_POSITION_NORM= 0x50000000图层，要插入，先移除，否者segment fauit。
++	weston_layer_entry_insert(&shell->video_layer.view_list, &shsurf->view->layer_link);
++       struct weston_layer *la = get_view_layer(shsurf->view);
++	const char *app_id = weston_desktop_surface_get_title(shsurf->desktop_surface);
++	if(la == NULL)
++		printf("LLP:function map :there is no layer\n");
++	else{
++		printf("LLP:the layer is %d %d,the app_id is %s\n",la->position,shsurf->view->layer_link.layer->position,app_id);
++		weston_layer_set_mask(la,50,50,300,300);
++	}
+ }
+ 
+diff --git a/shell.h b/shell.h
+index 3e90688..c2a1ae1 100644
+--- a/shell.h
++++ b/shell.h
+@@ -161,7 +161,7 @@ struct desktop_shell
+ 	struct weston_layer background_layer;
+ 	struct weston_layer lock_layer;
+ 	struct weston_layer input_panel_layer;
+-
++    struct weston_layer video_layer;//LLP ADD to waylandsink client
+ 	struct wl_listener pointer_focus_listener;
+ 	struct weston_surface *grab_surface;
+ 

@@ -1,0 +1,8 @@
+编译imx8:
+. /opt/fsl-imx-xwayland/5.10-hardknott/environment-setup-cortexa72-cortexa53-crypto-poky-linux
+meson build/ --prefix=/home/cgel/weston/LLP_IMX8 -Dpipewire=false -Dbackend-drm-screencast-vaapi=false -Dcolor-management-colord=false
+ninja -C build/ install
+
+编译x86:
+meson build/ --prefix=/home/cgel/weston/weston-9.0.0/LLP -Dpipewire=false -Dbackend-drm-screencast-vaapi=false -Dcolor-management-colord=false -Dbackend-rdp=false -Dremoting=false -Ddemo-clients=false
+ninja -C build/ install

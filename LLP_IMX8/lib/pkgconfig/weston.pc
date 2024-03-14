@@ -1,0 +1,12 @@
+prefix=/home/cgel/weston/weston-9.0.0/LLP_IMX8
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+libexecdir=${prefix}/libexec
+pkglibexecdir=${libexecdir}/weston
+
+Name: Weston Plugin API
+Description: Header files for Weston plugin development
+Version: 9.0.0
+Requires.private: libweston-9
+Cflags: -I${includedir}/weston
