@@ -46,6 +46,15 @@
 #define DEFAULT_NUM_WORKSPACES 1
 #define DEFAULT_WORKSPACE_CHANGE_ANIMATION_LENGTH 200
 
+static struct weston_layer *
+get_view_layer(struct weston_view *view)
+{
+	if (view->parent_view)
+		return get_view_layer(view->parent_view);
+	return view->layer_link.layer;
+}
+
+
 /*llp_protocaol*/
 static void my_function1(struct wl_client *client, struct wl_resource *resource, int32_t x, int32_t y, int32_t w, int32_t h) {
   // 这里处理您的业务逻辑。例如，保存这些参数或者更改窗口的大小等。
@@ -293,7 +302,7 @@ shell_surface_get_label(struct weston_surface *surface, char *buf, size_t len)
 
 	t = weston_desktop_surface_get_title(desktop_surface);
 	c = weston_desktop_surface_get_app_id(desktop_surface);
-    printf("LLP:shell.c shell_surface_get_label,the app id = %d\n",c);
+    //printf("LLP:shell.c shell_surface_get_label,the app id = %d\n",c);
 	return snprintf(buf, len, "%s window%s%s%s%s%s",
 					"top-level",
 					t ? " '" : "", t ?: "", t ? "'" : "",
@@ -358,7 +367,7 @@ shell_grab_start(struct shell_grab *grab,
 								 wl_fixed_from_int(0));
 	}
 	//LLP ADD
-	weston_desktop_surface_set_size(shsurf->desktop_surface,shsurf->last_width,shsurf->last_height);
+	//weston_desktop_surface_set_size(shsurf->desktop_surface,shsurf->last_width,shsurf->last_height);
 	//weston_surface_set_size(shell->grab_surface,100,100);
 }
 
@@ -1062,6 +1071,7 @@ activate_workspace(struct desktop_shell *shell, unsigned int index)
 	ws = get_workspace(shell, index);
 	weston_layer_set_position(&ws->layer, WESTON_LAYER_POSITION_NORMAL);
 
+    printf("LLP>shell.c activate_workspace\n");
 	shell->workspaces.current = index;
 }
 
@@ -1156,7 +1166,7 @@ reverse_workspace_change_animation(struct desktop_shell *shell,
 	shell->workspaces.anim_from = from;
 	shell->workspaces.anim_dir = -1 * shell->workspaces.anim_dir;
 	shell->workspaces.anim_timestamp = (struct timespec){0};
-
+    printf("LLP:reverse_workspace_change_animation\n");
 	weston_layer_set_position(&to->layer, WESTON_LAYER_POSITION_NORMAL);
 	weston_layer_set_position(&from->layer, WESTON_LAYER_POSITION_NORMAL - 1);
 
@@ -1293,7 +1303,7 @@ animate_workspace_change(struct desktop_shell *shell,
 
 	weston_layer_set_position(&to->layer, WESTON_LAYER_POSITION_NORMAL);
 	weston_layer_set_position(&from->layer, WESTON_LAYER_POSITION_NORMAL - 1);
-
+    printf("LLP:haha,I animate_workspace_change\n");
 	workspace_translate_in(to, 0);
 
 	restore_focus_state(shell, to);
@@ -1306,6 +1316,7 @@ update_workspace(struct desktop_shell *shell, unsigned int index,
 				 struct workspace *from, struct workspace *to)
 {
 	shell->workspaces.current = index;
+	printf("LLP:haha,I update_workspace\n");
 	weston_layer_set_position(&to->layer, WESTON_LAYER_POSITION_NORMAL);
 	weston_layer_unset_position(&from->layer);
 }
@@ -2833,6 +2844,16 @@ map(struct desktop_shell *shell, struct shell_surface *shsurf,
 			break;
 		}
 	}
+	weston_layer_entry_remove(&shsurf->view->layer_link);
+	weston_layer_entry_insert(&shell->video_layer.view_list, &shsurf->view->layer_link);
+    struct weston_layer *la = get_view_layer(shsurf->view);
+	const char *app_id = weston_desktop_surface_get_title(shsurf->desktop_surface);
+	if(la == NULL)
+		printf("LLP:function map :there is no layer\n");
+	else{
+		printf("LLP:the layer is %d %d,the app_id is %s\n",la->position,shsurf->view->layer_link.layer->position,app_id);
+		weston_layer_set_mask(la,50,50,300,300);
+	}
 }
 /*绘图关键函数，注意更改部分是为了实时设置窗口位置*/
 static void
@@ -2861,6 +2882,14 @@ desktop_surface_committed(struct weston_desktop_surface *desktop_surface,
 		ApplicationGemotry.flag = 0;
 	}
 
+    // struct weston_layer *la = get_view_layer(shsurf->view);
+	// const char *app_id = weston_desktop_surface_get_title(shsurf->desktop_surface);
+	// if(la == NULL)
+	// 	printf("LLP:function map :there is no layer\n");
+	// else{
+	// 	printf("LLP:the layer is %d %d,the app_id is %s\n",la->position,shsurf->view->layer_link.layer->position,app_id);
+	// 	weston_layer_set_mask(la,50,50,300,300);
+	// }
 	if (surface->width == 0)
 		return;
 
@@ -2952,6 +2981,8 @@ desktop_surface_committed(struct weston_desktop_surface *desktop_surface,
 		wl_list_for_each(view, &surface->views, surface_link)
 			weston_view_update_transform(view);
 	}
+    
+
 }
 
 static void
@@ -4248,8 +4279,8 @@ activate_binding(struct weston_seat *seat,
 	main_surface = weston_surface_get_main_surface(focus_view->surface);
 	if (!get_shell_surface(main_surface))
 		return;
-
-	activate(shell, focus_view, seat, flags);
+        /*LLP intension*/
+	//activate(shell, focus_view, seat, flags);
 }
 
 static void
@@ -4702,6 +4733,13 @@ weston_view_set_initial_position(struct weston_view *view,
 
 	// LLP ADD
 	struct weston_desktop_surface *desktop_surface = weston_surface_get_desktop_surface(view->surface);
+	//weston_layer_entry_insert(&shell->video_layer.view_list,&view->layer_link);
+	//weston_layer_set_mask(&shell->video_layer,100,100,100,100);
+	struct weston_layer *la = get_view_layer(view);
+	if(la == NULL && view->layer_link.layer == NULL)
+		printf("LLP:there is no layer\n");
+	
+    weston_layer_set_mask(&shell->fullscreen_layer,100,100,500,500);
 	if (appInfoList.AppMsg[0].Exist == 0)
 	{
 		/*LLP:2024-1-13:解决客户端不能指定位置的问题*/
@@ -5626,6 +5664,7 @@ wet_shell_init(struct weston_compositor *ec,
 	weston_layer_init(&shell->background_layer, ec);
 	weston_layer_init(&shell->lock_layer, ec);
 	weston_layer_init(&shell->input_panel_layer, ec);
+	weston_layer_init(&shell->video_layer, ec);//LLP ADD
 
 	weston_layer_set_position(&shell->fullscreen_layer,
 							  WESTON_LAYER_POSITION_FULLSCREEN);
@@ -5633,7 +5672,8 @@ wet_shell_init(struct weston_compositor *ec,
 							  WESTON_LAYER_POSITION_UI);
 	weston_layer_set_position(&shell->background_layer,
 							  WESTON_LAYER_POSITION_BACKGROUND);
-
+    weston_layer_set_position(&shell->video_layer,
+							  WESTON_LAYER_POSITION_NORMAL + 10);//LLP ADD
 	wl_array_init(&shell->workspaces.array);
 	wl_list_init(&shell->workspaces.client_list);
 
