@@ -1,4 +1,4 @@
-##1.创建一个位置自己定义的表面
+## 1.创建一个位置自己定义的表面
 ```c
     struct weston_layer *my_layer = zalloc(sizeof(*my_layer));
 	weston_layer_init(my_layer,shsurf->shell->compositor);
@@ -10,7 +10,7 @@
     weston_view_set_position(view1, 0,0);
 	weston_layer_entry_insert(&my_layer->view_list,&view1->layer_link);
 ```
-##2.通过xdg_shell解决客户端指定位置的问题.
+## 2.通过xdg_shell解决客户端指定位置的问题.
     在shell.h 里面定义需要数据交换的结构体，在xdg_shell.c 处理好xdg协议后，将需要交换的数据写入结构体，通过“__attribute__((visibility("default")))” 设置符号可见，让shell.c可以调用。
 2-1.shell.h
 ![Alt text](./LLP_IMAGE/2-1-1.png)
@@ -170,3 +170,5 @@ srcs_shell_desktop = [
 		input_method_unstable_v1_server_protocol_h,
 		input_method_unstable_v1_protocol_c,
 ]
+
+## 4.图层切换以及显示控制
